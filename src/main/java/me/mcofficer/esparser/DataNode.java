@@ -36,11 +36,13 @@ public class DataNode {
     private DataNode parent;
     private ArrayList<DataNode> children;
     private ArrayList<String> tokens;
+    private DataNodeLogger logger;
 
-    public DataNode(@Nullable DataNode parent, @Nullable ArrayList<DataNode> children, @Nullable ArrayList<String> tokens) {
+    public DataNode(@Nullable DataNode parent, @Nullable ArrayList<DataNode> children, @Nullable ArrayList<String> tokens, @Nullable DataNodeLogger logger) {
         this.parent = parent;
         this.children = children == null ? new ArrayList<>() : children;
         this.tokens = tokens == null ? new ArrayList<>() : tokens;
+        this.logger = logger;
     }
 
     public int size() {
@@ -128,7 +130,7 @@ public class DataNode {
     }
 
     public DataNode copy() {
-        DataNode copy = new DataNode(null, null, new ArrayList<>(tokens));
+        DataNode copy = new DataNode(null, null, new ArrayList<>(tokens), logger);
         if(hasChildren())
             for (DataNode child : children)
                 copy.append(child.copy());
@@ -147,24 +149,23 @@ public class DataNode {
         children = new ArrayList<DataNode>();
     }
 
-    public int printTrace(@Nullable String message) {
-        if(message != null)
-            System.out.println(message);
+    public void printTrace(@Nullable String message) {
+        ArrayList<String> trace = new ArrayList<String>();
+        makeTrace(trace);
+        logger.log(message, trace);
+    }
 
+    private int makeTrace(ArrayList<String> trace) {
         int indent = 0;
         if (parent != null)
-            indent = parent.printTrace("") + 2;
+            indent = parent.makeTrace(trace) + 2;
         if (tokens.isEmpty())
             return indent;
 
-        String line = "";
-        for (int i = 0; i <= indent; i++)
-            line += " ";
-
-        boolean start = true;
+        StringBuilder builder = new StringBuilder();
         for (String token : tokens) {
-            if (!start)
-                line += " ";
+            if (builder.length() > 0)
+                builder.append(' ');
 
             boolean hasSpace = false;
             boolean hasQuote = false;
@@ -176,15 +177,17 @@ public class DataNode {
                     hasQuote = true;
             }
 
-            String quotationMark = "";
+            String quotationMark = null;
             if (hasSpace)
                 quotationMark = hasQuote ? "`" : "\"";
 
-            line += (quotationMark + token + quotationMark);
-
-            start = false;
+            if (quotationMark != null)
+                builder.append(quotationMark);
+            builder.append(token);
+            if (quotationMark != null)
+                builder.append(quotationMark);
         }
-        System.out.println(line);
+        trace.add(builder.toString());
         return indent;
     }
 }

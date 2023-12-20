@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 package me.mcofficer.esparser;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -39,9 +40,21 @@ public class DataFile {
 
     private DataNode root;
 
-    public DataFile(String path) throws IOException {
-        root = new DataNode(null, null, null);
-        load(path);
+    public DataFile(String file) throws IOException {
+        this(Files.readAllLines(Paths.get(file)), new DataNodeLogger());
+    }
+
+    public DataFile(List<String> data) throws IOException {
+        this(data, new DataNodeLogger());
+    }
+
+    public DataFile(String file, DataNodeLogger logger) throws IOException {
+        this(Files.readAllLines(Paths.get(file)), logger);
+    }
+
+    public DataFile(List<String> data, DataNodeLogger logger) throws IOException {
+        root = new DataNode(null, null, null, logger);
+        parse(data, logger);
     }
 
     public ArrayList<DataNode> getNodes() {
@@ -52,12 +65,7 @@ public class DataFile {
         return root.getChildrenReversed();
     }
 
-    private void load(String path) throws IOException {
-        List<String> data = Files.readAllLines(Paths.get(path));
-        parse(data);
-    }
-
-    private void parse(List<String> data) {
+    private void parse(List<String> data, @Nullable DataNodeLogger logger) {
         data = data.stream().map(s -> s += "\n").collect(Collectors.toList());
         Stack<DataNode> stack = new Stack<>();
         stack.add(root);
@@ -68,7 +76,7 @@ public class DataFile {
             char[] chars = line.toCharArray();
             int i = 0;
             int white = 0;
-            while (Character.isWhitespace(chars[i]) && chars[i] != '\n') {
+            while (i < chars.length && Character.isWhitespace(chars[i]) && chars[i] != '\n') {
                 white += 1;
                 i += 1;
             }
@@ -81,40 +89,46 @@ public class DataFile {
                 stack.pop();
             }
 
-            DataNode node = new DataNode(null, null, null);
+            DataNode node = new DataNode(null, null, null, logger);
             stack.peek().append(node);
 
             stack.add(node);
             whiteStack.add(white);
 
-            while (chars[i] != '\n') {
+            while (i < chars.length && chars[i] != '\n') {
                 char endQuote = chars[i];
                 boolean isQuoted = false;
                 if (endQuote == '"' || endQuote == '`') {
                     isQuoted = true;
                     i += 1;
+                    if(i == chars.length)
+                        break;
                 }
 
                 String token = "";
                 if (isQuoted) {
-                    while (chars[i] != '\n' && chars[i] != endQuote) {
+                    while (i < chars.length && chars[i] != '\n' && chars[i] != endQuote) {
                         token += chars[i];
                         i += 1;
                     }
-                    if (chars[i] != endQuote)
+                    if (i == chars.length || chars[i] != endQuote)
                         node.printTrace("Closing Quote is missing");
+                    if(i == chars.length)
+                        break;
                     i += 1;
                 }
                 else {
-                    while (!Character.isWhitespace(chars[i])) {
+                    while (i != chars.length && !Character.isWhitespace(chars[i])) {
                         token += chars[i];
                         i += 1;
                     }
                 }
                 node.getTokens().add(token);
 
+                if (i >= chars.length)
+                    break;
                 if (chars[i] != '\n')
-                        while (Character.isWhitespace(chars[i]) && chars[i] != '\n')
+                        while (i != chars.length && Character.isWhitespace(chars[i]) && chars[i] != '\n')
                             i += 1;
                 if (chars[i] == '#')
                     break;
