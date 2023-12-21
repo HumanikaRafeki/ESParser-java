@@ -53,6 +53,13 @@ public class DataNode {
         return tokens;
     }
 
+    public String token(int index) {
+        if (index > tokens.size())
+            return "";
+        else
+            return tokens.get(index);
+    }
+
     public double valueAt(int index) {
         if (!isNumberAt(index)) {
             printTrace("Cannot convert token at index " + index + " to a number.");
@@ -62,7 +69,7 @@ public class DataNode {
         return Double.valueOf(tokens.get(index));
     }
 
-    private boolean isNumberAt(int index) {
+    public boolean isNumberAt(int index) {
         if (index >= size())
             return  false;
 
