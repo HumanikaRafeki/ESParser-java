@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DataFile {
 
@@ -48,11 +49,20 @@ public class DataFile {
         this(data, new DataNodeLogger());
     }
 
+    public DataFile(Stream<String> data) throws IOException {
+        this(data, new DataNodeLogger());
+    }
+
     public DataFile(String file, DataNodeLogger logger) throws IOException {
         this(Files.readAllLines(Paths.get(file)), logger);
     }
 
     public DataFile(List<String> data, DataNodeLogger logger) throws IOException {
+        root = new DataNode(null, null, null, logger);
+        parse(data, logger);
+    }
+
+    public DataFile(Stream<String> data, DataNodeLogger logger) throws IOException {
         root = new DataNode(null, null, null, logger);
         parse(data, logger);
     }
@@ -66,13 +76,17 @@ public class DataFile {
     }
 
     private void parse(List<String> data, @Nullable DataNodeLogger logger) {
-        data = data.stream().map(s -> s += "\n").collect(Collectors.toList());
+        parse(data.stream(), logger);
+    }
+
+    private void parse(Stream<String> data, @Nullable DataNodeLogger logger) {
+        List<String> eoln = data.map(s -> s += "\n").collect(Collectors.toList());
         Stack<DataNode> stack = new Stack<>();
         stack.add(root);
         Stack<Integer> whiteStack = new Stack<>();
         whiteStack.add(-1);
 
-        for (String line : data) {
+        for (String line : eoln) {
             char[] chars = line.toCharArray();
             int i = 0;
             int white = 0;
@@ -128,8 +142,8 @@ public class DataFile {
                 if (i >= chars.length)
                     break;
                 if (chars[i] != '\n')
-                        while (i != chars.length && Character.isWhitespace(chars[i]) && chars[i] != '\n')
-                            i += 1;
+                    while (i != chars.length && Character.isWhitespace(chars[i]) && chars[i] != '\n')
+                        i += 1;
                 if (chars[i] == '#')
                     break;
             }
