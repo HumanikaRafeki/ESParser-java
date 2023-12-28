@@ -30,6 +30,7 @@ package me.mcofficer.esparser;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.OptionalDouble;
 
 public class DataNode {
 
@@ -67,6 +68,12 @@ public class DataNode {
         }
 
         return Double.valueOf(tokens.get(index));
+    }
+
+    public OptionalDouble optionalValue(int index) {
+        if (index > tokens.size() || !isNumberAt(index))
+            return OptionalDouble.empty();
+        return OptionalDouble.of(Double.valueOf(tokens.get(index)));
     }
 
     public boolean isNumberAt(int index) {
