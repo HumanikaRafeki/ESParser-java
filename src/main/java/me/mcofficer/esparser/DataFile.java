@@ -194,6 +194,10 @@ public class DataFile {
                     break;
             }
         }
+        while (!whiteStack.empty()) {
+            whiteStack.pop();
+            stack.pop().setLastLine(iline);
+        }
     }
 
     public void append(DataNode node) {
